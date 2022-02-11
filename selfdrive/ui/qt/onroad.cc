@@ -214,7 +214,7 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("steeringPressed", car_state.getSteeringPressed());
   setProperty("dmActive", sm["driverMonitoringState"].getDriverMonitoringState().getIsActiveMode());
 
-  setProperty("brake_stat", car_control.getActuators().getAccel() < -1.96133 || car_state.getBrakeLights() || car_state.getBrakePressed());
+  setProperty("brake_stat", car_state.getBrakeLights() || car_state.getBrakePressed());
   setProperty("autohold_stat", car_state.getAutoHold());
   setProperty("nda_stat", roadLimitSpeed.getActive());
   setProperty("bsd_l_stat", car_state.getLeftBlindspot());
@@ -235,7 +235,6 @@ void OnroadHud::updateState(const UIState &s) {
 int OnroadHud::devUiDrawElement(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color) {
   configFont(p, "Open Sans", 45, "SemiBold");
   drawTextColor(p, x + 92, y + 80, QString(value), color);
-
   configFont(p, "Open Sans", 28, "Regular");
   drawText(p, x + 92, y + 80 + 42, QString(label), 255);
 
@@ -272,7 +271,6 @@ void OnroadHud::drawRightDevUi(QPainter &p, int x, int y) {
     } else if (cputemp_stat >= 70.0f) {
       valueColor = orangeColor;
     }
-
     snprintf(val_str, sizeof(val_str), "%.1f%s%s", cputemp_stat, "℃", "");
 
     //rh += devUiDrawElement(p, x, ry, val_str, "CPU TEMP", "", valueColor);
@@ -293,7 +291,6 @@ void OnroadHud::drawRightDevUi(QPainter &p, int x, int y) {
     } else if (std::fabs(angleSteers) > 30) {
       valueColor = orangeColor;
     }
-
     snprintf(val_str, sizeof(val_str), "%.0f%s%s", angleSteers , "°", "");
 
     //rh += devUiDrawElement(p, x, ry, val_str, "REAL STEER", "", valueColor);
@@ -307,19 +304,14 @@ void OnroadHud::drawRightDevUi(QPainter &p, int x, int y) {
     char val_str[8];
     valueColor = limeColor;
 
-    if (status != STATUS_DISENGAGED) {
-      // Red if large steering angle
-      // Orange if moderate steering angle
-      if (std::fabs(angleSteers) > 90) {
-        valueColor = redColor;
-      } else if (std::fabs(angleSteers) > 30) {
-        valueColor = orangeColor;
-      }
-
-      snprintf(val_str, sizeof(val_str), "%.0f%s%s", steerAngleDesired, "°", "");
-    } else {
-      snprintf(val_str, sizeof(val_str), "-");
+    // Red if large steering angle
+    // Orange if moderate steering angle
+    if (std::fabs(angleSteers) > 90) {
+      valueColor = redColor;
+    } else if (std::fabs(angleSteers) > 30) {
+      valueColor = orangeColor;
     }
+    snprintf(val_str, sizeof(val_str), "%.0f%s%s", steerAngleDesired, "°", "");
 
     //rh += devUiDrawElement(p, x, ry, val_str, "DESIR STEER", "", valueColor);
     rh += devUiDrawElement(p, x, ry, val_str, "OP 조향각", "", valueColor);
@@ -344,7 +336,6 @@ void OnroadHud::drawRightDevUi(QPainter &p, int x, int y) {
     } else {
       snprintf(val_str, sizeof(val_str), "-");
     }
-
     snprintf(units_str, sizeof(units_str), "m");
 
     //rh += devUiDrawElement(p, x, ry, val_str, "REL DIST", units_str, valueColor);
@@ -396,7 +387,13 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   bg.setColorAt(0, QColor::fromRgbF(0, 0, 0, 0.45));
   bg.setColorAt(1, QColor::fromRgbF(0, 0, 0, 0));
   p.fillRect(0, 0, width(), header_h, bg);
+
+  // maxspeed
   QRect rc(30, 30, 184, 202);
+  p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
+  p.setBrush(QColor(0, 0, 0, 100));
+  p.drawRoundedRect(rc, 20, 20);
+  p.setPen(Qt::NoPen);
 
   // color define
   QColor yellowColor = QColor(255, 255, 0, 255);
@@ -484,6 +481,7 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
     p.drawPixmap(x, y, w, h, nda_stat == 1 ? nda_img : hda_img);
     p.setOpacity(1.0);
   }
+
  // cruise gap (bottom 1 right)
   x = radius / 2 + (bdr_s * 2) + radius;
   y = rect().bottom() - footer_h / 2;
@@ -843,10 +841,6 @@ void NvgWindow::drawMaxSpeed(QPainter &p) {
   bool is_cruise_set = (cruiseMaxSpeed > 0 && cruiseMaxSpeed < 255);
 
   QRect rc(30, 30, 184, 202);
-  p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
-  p.setBrush(QColor(0, 0, 0, 100));
-  p.drawRoundedRect(rc, 20, 20);
-  p.setPen(Qt::NoPen);
 
   QColor yellowColor = QColor(255, 255, 0, 255);
 
